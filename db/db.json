@@ -1,0 +1,24 @@
+{
+  "departments": [
+    {
+      "name": "production",
+      "id": 1
+    },
+    {
+      "name": "development",
+      "id": 2
+    },
+    {
+      "name": "research",
+      "id": 3
+    }
+  ],
+  "employees": [],
+  "user": [
+    {
+      "name": "Lekh Raj",
+      "email": "lekhraj@gmail.com",
+      "password": "password@1",
+      "id": 1
+    }
+}
