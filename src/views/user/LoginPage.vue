@@ -7,23 +7,23 @@
                         <img :src="logo" alt="" class="logo">
                     </a>
                 </div>
-                <h2 class="text-center">Sign In</h2>
-                <form>
+                <h2 class="text-center">User Login</h2>
+                <form @submit.prevent>
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" v-model="user.email" class="form-control" id="email">
+                        <EmailField v-model="user.email"/>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" v-model="user.password" class="form-control" id="password">
+                        <PasswordField v-model="user.password"/>
                     </div>
                     <div>
-                        <button class="btn btn-primary" @click.prevent="handleSignup()">Submit</button>
+                        <button class="btn btn-primary" 
+                        :disabled="isButtonDisabled"
+                        @click="signUpButtonPressed()">Submit</button>
                     </div>
-                    <div>
-                        <a href="/signup">Sign up here</a>
+                     <div>
+                        <a href="/">Login here</a>
                     </div>
-                    <p class="text-error">{{message}}</p>
+                    <p class="text-success">{{message}}</p>
                 </form>
             </div>
         </div>
@@ -31,18 +31,55 @@
 </template>
 <script>
 import { ApiService } from '@/config'
+import { reactive } from "vue";
+import { useRouter } from 'vue-router'
+
 import logo from '@/assets/logo.png'
+import EmailField from '@/components/EmailField'
+import PasswordField from '@/components/PasswordField'
+
+import useFormValidation from "@/modules/useFormValidation";
+import useSubmitButtonState from "@/modules/useSubmitButtonState";
 
 export default{
-    name:'User Registration',
+    name:'UserLogin',
+     setup() {
+        let user = reactive({
+            email: "",
+            password: "",
+        });
+
+        const router = useRouter()
+        const { error } = useFormValidation();
+        const { isButtonDisabled } = useSubmitButtonState(user, error);
+
+        const signUpButtonPressed = () => {
+            ApiService.get('/user?email='+user.email+'&password'+user.password)
+            .then((resp) => {
+                if(resp.data.length){
+                    localStorage.setItem('cuser',JSON.stringify(resp.data[0]));
+                    router.push({name:'dashboard'});
+                }else{
+                   console.log("failed to logged in");
+                }
+            })
+            .catch((error) => {
+                console.log({error});
+            })
+        };
+        return { 
+            user, 
+            signUpButtonPressed,
+            isButtonDisabled, 
+        };
+    },
+    components: {
+        EmailField,
+        PasswordField
+    },
     data() {
         return {
             logo,
-            message:'',
-            user: {
-                email:'',
-                password:''
-            }
         }
     },
     mounted() {
@@ -50,25 +87,5 @@ export default{
             this.$router.push({ name:'dashboard'});
         }
     },
-    methods: {
-        async handleSignup() {
-            if(!this.user.email){
-                this.message ="Please fill up all inputs";
-                return;
-            } 
-            await ApiService.get('/user?email='+this.user.email+'&password'+this.user.email)
-            .then((resp) => {
-                if(resp.data.length){
-                    localStorage.setItem('cuser',JSON.stringify(resp.data[0]));
-                    this.$router.push({name:'dashboard'});
-                }else{
-                    this.message = "Incorrect email/password";
-                }
-            })
-            .catch((error) => {
-                console.log({error});
-            })
-        }
-    }
 }
 </script>

@@ -8,21 +8,20 @@
                     </a>
                 </div>
                 <h2 class="text-center">User Registration</h2>
-                <form>
+                <form @submit.prevent>
                     <div class="mb-3">
-                        <label for="name" class="form-label">Name</label>
-                        <input type="name" v-model="user.name" class="form-control" id="name">
+                        <NameField v-model="user.name"/>
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" v-model="user.email" class="form-control" id="email">
+                        <EmailField v-model="user.email"/>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" v-model="user.password" class="form-control" id="password">
+                        <PasswordField v-model="user.password"/>
                     </div>
                     <div>
-                        <button class="btn btn-primary" @click.prevent="handleSignup()">Submit</button>
+                        <button class="btn btn-primary" 
+                        :disabled="isButtonDisabled"
+                        @click="signUpButtonPressed()">Submit</button>
                     </div>
                      <div>
                         <a href="/">Login here</a>
@@ -35,45 +34,61 @@
 </template>
 <script>
 import { ApiService } from '@/config'
+import { reactive } from "vue";
+import { useRouter } from 'vue-router'
+
 import logo from '@/assets/logo.png'
+import NameField from '@/components/NameField'
+import EmailField from '@/components/EmailField'
+import PasswordField from '@/components/PasswordField'
+
+import useFormValidation from "@/modules/useFormValidation";
+import useSubmitButtonState from "@/modules/useSubmitButtonState";
+
 export default{
-    name:'User Registration',
+    name:'UserRegistration',
+     setup() {
+        let user = reactive({
+            name: "",
+            email: "",
+            password: "",
+        });
+
+        const router = useRouter()
+        const { error } = useFormValidation();
+        const { isButtonDisabled } = useSubmitButtonState(user, error);
+
+        const signUpButtonPressed = () => {
+            ApiService.post('/user', user)
+            .then((resp) => {
+                localStorage.setItem('cuser',JSON.stringify(resp.data));
+                setTimeout(() => {
+                    router.push({ name:'dashboard'});
+                },1000);
+            })
+            .catch(() => {
+                 this.message = "Failed to register user";
+            })
+        };
+        return { 
+            user, 
+            signUpButtonPressed,
+            isButtonDisabled, 
+        };
+    },
+    components: {
+        NameField,
+        EmailField,
+        PasswordField
+    },
     data() {
         return {
             logo,
-            message:'',
-            user: {
-                name:'',
-                email:'',
-                password:''
-            }
         }
     },
     mounted() {
         if(localStorage.getItem('cuser')){
             this.$router.push({ name:'dashboard'});
-        }
-    },
-    methods: {
-        handleSignup() {
-            if(!this.user.name) return;
-            ApiService.post('/user', this.user)
-            .then((resp) => {
-                this.user = {
-                    name:'',
-                    email:'',
-                    password:''
-                };
-                localStorage.setItem('cuser',JSON.stringify(resp.data));
-                this.message = "User registered successfully";
-                setTimeout(() => {
-                    this.message = "";
-                    this.$router.push({ name:'dashboard'});
-                },1000);
-            })
-            .catch((error) => {
-                console.log({error});
-            })
         }
     }
 }
